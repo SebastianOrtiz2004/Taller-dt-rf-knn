@@ -1,10 +1,3 @@
-"""
-UNIVERSIDAD TÉCNICA DE AMBATO - FISEI
-CARRERA DE SOFTWARE - INTELIGENCIA ARTIFICIAL
-Tema: Clasificación de dígitos manuscritos con MNIST (Árbol, Random Forest, k-NN)
-Docente: Rubén Nogales
-"""
-
 import sys
 import time
 import re
@@ -12,10 +5,6 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# ==============================================================================
-# PARCHE DEFINITIVO PARA PYTHON 3.14 + PANDAS (Evita TypeError en ARFF parser)
-# ==============================================================================
-# 1. Intercepción en el motor de expresiones regulares para tolerar tipos enteros
 _orig_re_search = re.search
 def _safe_re_search(pattern, string, flags=0):
     if not isinstance(string, (str, bytes, bytearray)):
@@ -23,7 +12,6 @@ def _safe_re_search(pattern, string, flags=0):
     return _orig_re_search(pattern, string, flags)
 re.search = _safe_re_search
 
-# 2. Intercepción en el categorizador de pandas
 from pandas.core.arrays.categorical import Categorical
 _orig_rename_categories = Categorical.rename_categories
 def _safe_rename_categories(self, new_categories, *args, **kwargs):
@@ -47,9 +35,6 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.metrics import accuracy_score, confusion_matrix, ConfusionMatrixDisplay
 
-# ==============================================================================
-# ACTIVIDAD 1: ENTORNO, DESCARGA Y PREPARACIÓN DE MNIST
-# ==============================================================================
 print("=" * 80)
 print("1. ENTORNO DE EJECUCIÓN Y VERSIONES REGISTRADAS")
 print("=" * 80)
@@ -60,25 +45,21 @@ print("=" * 80 + "\n")
 print("Descargando / Procesando MNIST (OpenML ID: 554)... (espera un momento)")
 X, y = fetch_openml(data_id=554, as_frame=False, return_X_y=True)
 
-# Normalización Min-Max continua [0.0, 1.0] y conversión de etiquetas a entero
 X = X.astype("float32") / 255.0
 y = y.astype("int64")
 
-# Muestreo estratificado por dígito con semilla 42 (Anexo A)
 def tomar_muestra(X_base, y_base, n):
     X_muestra, _, y_muestra, _ = train_test_split(
         X_base, y_base, train_size=n, stratify=y_base, random_state=42
     )
     return X_muestra, y_muestra
 
-# Subconjuntos: 10 000 para entrenamiento y 2 000 para prueba
 X_ent, y_ent = tomar_muestra(X[:60000], y[:60000], 10000)
 X_pru, y_pru = tomar_muestra(X[60000:], y[60000:], 2000)
 
 print(f"Dimensiones de X_ent: {X_ent.shape} | y_ent: {y_ent.shape}")
 print(f"Dimensiones de X_pru: {X_pru.shape}  | y_pru: {y_pru.shape}\n")
 
-# Verificación de distribución de dígitos (para la sección 2.7 del informe)
 distribucion = pd.DataFrame({
     "Dígito": list(range(10)),
     "Frecuencia Entrenamiento": np.bincount(y_ent),
@@ -90,7 +71,6 @@ print("Distribución de clases por conjunto (Muestreo Estratificado):")
 print(distribucion.to_string(index=False))
 print("-" * 80)
 
-# Visualización de 5 ejemplos de entrenamiento (Actividad 1)
 fig1, axes1 = plt.subplots(1, 5, figsize=(10, 2.5))
 fig1.canvas.manager.set_window_title("Muestra de 5 dígitos de MNIST")
 for i in range(5):
@@ -101,10 +81,6 @@ plt.tight_layout()
 fig1.savefig("figura1_muestras_mnist.png", dpi=300)
 print("-> Figura 1 guardada como 'figura1_muestras_mnist.png'")
 
-
-# ==============================================================================
-# ACTIVIDAD 2: INSTANCIACIÓN Y AJUSTE DE MODELOS (TABLA 1)
-# ==============================================================================
 modelos = {
     "Árbol de decisión": DecisionTreeClassifier(
         max_depth=15, 
@@ -141,10 +117,6 @@ for nombre, modelo in modelos.items():
     tiempos_entrenamiento[nombre] = duracion
     print(f" -> {nombre} ajustado en {duracion:.2f} segundos.")
 
-
-# ==============================================================================
-# ACTIVIDAD 3: EVALUACIÓN Y GENERACIÓN DE TABLA 2
-# ==============================================================================
 filas_tabla_2 = []
 
 for nombre, modelo in modelos.items():
@@ -178,16 +150,11 @@ print("=" * 80)
 print(df_tabla_2.to_string(index=False))
 print("=" * 80)
 
-# Verificación formal: Exactitud + Error = 100.00%
 for _, r in df_tabla_2.iterrows():
     assert np.isclose(r["Exactitud ent. (%)"] + r["Error ent. (%)"], 100.0), "Error de suma en entrenamiento"
     assert np.isclose(r["Exactitud prueba (%)"] + r["Error prueba (%)"], 100.0), "Error de suma en prueba"
 print("Verificación formal superada: Exactitud + Error = 100.00% en todos los clasificadores.\n")
 
-
-# ==============================================================================
-# ACTIVIDAD 4: MATRICES DE CONFUSIÓN Y MÁXIMAS CONFUSIONES
-# ==============================================================================
 fig2, axes2 = plt.subplots(1, 3, figsize=(18, 5))
 fig2.canvas.manager.set_window_title("Matrices de Confusión de Prueba")
 
@@ -221,10 +188,6 @@ for nombre, cm in matrices_cm.items():
     
     print(f"[{nombre}] Confusión más frecuente: Dígito {real_f} clasificado como {pred_f} -> ({conteo_fallos} casos)")
 
-
-# ==============================================================================
-# INSPECCIÓN DE CASO MAL CLASIFICADO (FIGURA 3)
-# ==============================================================================
 indices_fallos = []
 for i in range(len(y_pru)):
     fallo = (
@@ -259,5 +222,4 @@ print("=" * 80)
 print("EJECUCIÓN COMPLETADA EXITOSAMENTE")
 print("=" * 80)
 
-# Muestra las figuras generadas en pantalla
 plt.show()
